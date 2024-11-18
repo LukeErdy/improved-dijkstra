@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define MAX_WIDTH 1024
 
 typedef struct node {
 	int row, column;
 	double g_cost;
-	double f_cost;
+	double f_cost; 
 	struct node *previous;
 } Node;
 
@@ -46,6 +47,7 @@ void pathfind(char** graph, int height) {
 		}
 	}
 	Node *current = source;
+	current->g_cost = 0;
 	Node **open = malloc(height * strlen(graph[0]) * sizeof(Node*)); // go by coords, not pointer value
 	Node **closed = malloc(height * strlen(graph[0]) * sizeof(Node*));
 	int open_size = 0, closed_size = 0;
@@ -62,51 +64,54 @@ void pathfind(char** graph, int height) {
 					new->row = i;
 					new->column = j;
 
-					double h_cost = (((destination->column - j) / 2) * ((destination->column - j) / 2))
-								+ ((destination->row - i) * (destination->row - i));
-					//printf("%c, h_cost: %f\n", graph[i][j], h_cost);
+					double h_cost = sqrt((((destination->column - j) / 2) * ((destination->column - j) / 2))
+								+ ((destination->row - i) * (destination->row - i)));
+					//(abs(destination->column - j) / 2) + abs(destination->row - i);
+					new->g_cost = current->g_cost;
+					double tmp_g;
 					switch (graph[i][j]) {
 						case '.':
-							new->g_cost = 1;
+							tmp_g = 1;
 							break;
 						case ',':
-							new->g_cost = 2;
+							tmp_g = 2;
 							break;
 						case 'o':
-							new->g_cost = 3;
+							tmp_g = 3;
 							break;
 						case '=':
-							new->g_cost = 50;
+							tmp_g = 50;
 							break;
 						case '2':
-							// new->g_cost = -1;
-							// double cost = 0;
-							// Node* point = current;
-							// while (1) {
-							// 	cost += point->g_cost;
-							// 	point = point->previous;
-							// 	if (point == source) break;
-							// }
-							// if (cost < best_cost) {
-							// 	best_cost = cost;
-							// 	best_candidate = current;
-							// }
+							tmp_g = -1;
+							if (current->f_cost < best_cost) {
+								best_candidate = current;
+								best_cost = current->f_cost;
+							}
 
 							break;
 						default:
-							new->g_cost = -1; // if g_cost is - that node is unwalkable. Ignore it entirely
+							tmp_g = -1; // if g_cost is - that node is unwalkable. Ignore it entirely
 					}
 					if ((current->row - 1 == i && current->column + 2 == j) || (current->row + 1 == i && current->column + 2 == j)
 						|| (current->row + 1 == i && current->column - 2 == j) || (current->row - 1 == i && current->column - 2 == j)) {
-						new->g_cost *= 1.5;
+						tmp_g *= 1.5;
 					}
+					new->g_cost += tmp_g;
 					new->f_cost = h_cost + new->g_cost;
 					new->previous = current;
-					if (new->g_cost > 0) {
+					if (tmp_g > 0) {
 						// we add this neighbor to open if: 1) it's not in open and 2) it's not in closed. we check coords, not pointers
 						int A = 0, B = 0;
 						for (int k = 0; k < closed_size; k++) {
 							if (closed[k]->row == new->row && closed[k]->column == new->column) {
+								//could a more optimal path to something already in closed be found?
+								if (new->f_cost < closed[k]->f_cost) {
+									// remove
+									for (int z = k; z < closed_size - 1; z++) closed[z] = closed[z + 1];
+									closed_size -= 1;
+									break;
+								}
 								A = 1;
 								break;
 							}
@@ -140,14 +145,14 @@ void pathfind(char** graph, int height) {
 		open_size -= 1;
 		//printf("size of open set: %d\n", open_size);
 		if (!open_size) {
-			// Node* point = best_candidate;
-			// while (1) {
-			// 	graph[point->row][point->column] = '*';
-			// 	point = point->previous;
-			// 	if (point == source) break;
-			// }
-			// for (int a = 0; a < height; a++) printf("%s", graph[a]);
-			// printf("\nTotal cost: %f\n", best_cost);
+			Node* point = best_candidate;
+			while (1) {
+				graph[point->row][point->column] = '*';
+				point = point->previous;
+				if (point == source) break;
+			}
+			for (int a = 0; a < height; a++) printf("%s", graph[a]);
+			printf("\nTotal cost: %.1f\n", best_candidate->g_cost);
 			return;
 		}
 
