@@ -151,8 +151,18 @@ void pathfind(char** graph, int height) {
 				point = point->previous;
 				if (point == source) break;
 			}
-			for (int a = 0; a < height; a++) printf("%s", graph[a]);
-			printf("\nTotal cost: %.1f\n", best_candidate->g_cost);
+			int count = 0;
+			for (int a = 0; a < strlen(graph[0]); a++) {
+				if (graph[0][a] != '\n' && graph[0][a] != ' ' && graph[0][a] != '\r') count++;
+			}
+			count += count - 1;
+			for (int b = 0; b < height; b++) {
+				for (int c = 0; c < count; c++) {
+					printf("%c", graph[b][c]);
+				}
+				printf("\n");
+			}
+			printf("Total cost: %.1f\n", best_candidate->g_cost);
 			return;
 		}
 
